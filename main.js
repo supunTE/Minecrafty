@@ -38,6 +38,7 @@ const environmentMapTexture = cubeTextureLoader.load([
 	SunnyPZ,
 	SunnyNZ,
 ])
+
 environmentMapTexture.magFilter = THREE.NearestFilter
 scene.background = environmentMapTexture
 
@@ -112,22 +113,64 @@ function updateTerrain() {
 		properties.seed,
 	)
 	group.clear()
+
+	let blocks = []
+
 	for (let i = 0; i < properties.terrainWidth; i++) {
+		const layer2D = []
 		for (let j = 0; j < properties.terrainWidth; j++) {
+			const layer = []
 			for (let k = 0; k < heightMap[i][j]; k++) {
-				const material = k < heightMap[i][j] - 1 ? dirtMaterial : grassMaterial
-				const cube = new THREE.Mesh(geometry, material)
+				// const x = (i - properties.terrainWidth / 2) * cubeWidth + i * gap
+				// const z = (j - properties.terrainWidth / 2) * cubeWidth + j * gap
+				// const y = (k - properties.terrainWidth / 2) * cubeWidth + k * gap
 
-				const x = (i - properties.terrainWidth / 2) * cubeWidth + i * gap
-				const z = (j - properties.terrainWidth / 2) * cubeWidth + j * gap
-				const y = (k - properties.terrainWidth / 2) * cubeWidth + k * gap
-				cube.position.set(x, y, z)
+				layer.push({ i, j, k })
+			}
+			layer2D.push(layer)
+		}
+		blocks.push(layer2D)
+	}
 
-				group.add(cube)
+	for (let i = 0; i < blocks.length; i++) {
+		for (let j = 0; j < blocks[i].length; j++) {
+			for (let k = 0; k < blocks[i][j].length; k++) {
+				// Assume that the current block is not hidden
+				let isHidden = false
+
+				// Check the surrounding blocks to see if the current block is covered on all sides
+				if (
+					i > 0 &&
+					j > 0 &&
+					k > 0 &&
+					i < blocks.length - 1 &&
+					j < blocks[i].length - 1 &&
+					k < blocks[i][j].length - 1
+				) {
+					isHidden =
+						blocks[i - 1][j][k] !== undefined &&
+						blocks[i + 1][j][k] !== undefined &&
+						blocks[i][j - 1][k] !== undefined &&
+						blocks[i][j + 1][k] !== undefined &&
+						blocks[i][j][k - 1] !== undefined &&
+						blocks[i][j][k + 1] !== undefined
+				}
+
+				if (!isHidden) {
+					const x = (i - properties.terrainWidth / 2) * cubeWidth + i * gap
+					const z = (j - properties.terrainWidth / 2) * cubeWidth + j * gap
+					const y = (k - properties.terrainWidth / 2) * cubeWidth + k * gap
+
+					const material =
+						k < heightMap[i][j] - 1 ? dirtMaterial : grassMaterial
+					const cube = new THREE.Mesh(geometry, material)
+					cube.position.set(x, y, z)
+					group.add(cube)
+					scene.add(group)
+				}
 			}
 		}
 	}
-	scene.add(group)
 }
 
 updateTerrain()
